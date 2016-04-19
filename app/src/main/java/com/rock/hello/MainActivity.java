@@ -3,8 +3,10 @@ package com.rock.hello;
 import android.content.pm.ActivityInfo;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.format.DateFormat;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +17,8 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.MediaController;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.VideoView;
 
 /**
@@ -26,13 +30,18 @@ import android.widget.VideoView;
  *
  *
  */
-public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, CompoundButton.OnCheckedChangeListener, View.OnTouchListener {
+public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, CompoundButton.OnCheckedChangeListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener {
 
     private VideoView mVideo;
     // 声明媒体控制器
 //    private MediaController mediaController;
     private boolean isPrepared;
     private View controller;
+    private TextView mCurrentTime;
+    private TextView mTotalTime;
+
+    private Handler mHandler;
+    private SeekBar mPlayerProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +60,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 //        mVideo.setVideoURI(Uri.parse("http://7rflo2.com2.z0.glb.qiniucdn.com/5714b0b53c958.mp4"));
 //        //  播放
 //        mVideo.start();
-        mVideo.setOnPreparedListener(this);
+        if (mVideo != null) {
+            mVideo.setOnPreparedListener(this);
+        }
         // 获取屏幕高度
         int heightPixels = getResources().getDisplayMetrics().heightPixels;
         // 设置VideoView高为屏幕的三分之一
@@ -65,18 +76,36 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             public void run() {
                 super.run();
 //                mVideo.setVideoURI(Uri.parse("http://7rflo2.com2.z0.glb.qiniucdn.com/5714b0b53c958.mp4"));
+                isPrepared = false;
                 mVideo.setVideoURI(Uri.parse("/storage/emulated/0/UCDownloads/zhou.mp4"));
             }
         }.start();
 
-        ((CheckBox) findViewById(R.id.player_full_screen)).setOnCheckedChangeListener(this);
-        ((CheckBox) findViewById(R.id.player_play)).setOnCheckedChangeListener(this);
+        CheckBox playerScreen = (CheckBox) findViewById(R.id.player_full_screen);
+        if (playerScreen != null) {
+            playerScreen.setOnCheckedChangeListener(this);
+        }
+        CheckBox playerPlay = (CheckBox) findViewById(R.id.player_play);
+        if (playerPlay != null) {
+            playerPlay.setOnCheckedChangeListener(this);
+        }
         controller = findViewById(R.id.player_controll_view);
+
+        mCurrentTime = ((TextView) findViewById(R.id.player_current_time));
+        mTotalTime = ((TextView) findViewById(R.id.player_total_time));
+
+        mPlayerProgress = ((SeekBar) findViewById(R.id.player_progress));
+        if (mPlayerProgress != null) {
+            mPlayerProgress.setOnSeekBarChangeListener(this);
+        }
     }
 // 设置准备好了的监听
     @Override
     public void onPrepared(MediaPlayer mp) {
         mVideo.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        int duration = mVideo.getDuration();
+        mTotalTime.setText(DateFormat.format("mm:ss",duration));
+        mPlayerProgress.setMax(duration);
         isPrepared = true;
     }
 
@@ -99,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             case R.id.player_play:
                 if (isChecked && isPrepared){
                     mVideo.start();
-                }else if(isPrepared && !isChecked){
+                }else if(!isChecked && isPrepared){
                     mVideo.pause();
                 }
                 break;
@@ -111,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         showOrHide();
         return false;
     }
-
+    // 显示或者隐藏底部顶部控制
     private void showOrHide(){
         if (controller.getVisibility() == View.VISIBLE) {
             Animation exit = AnimationUtils.loadAnimation(this, R.anim.controller_exit);
@@ -124,4 +153,24 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         }
     }
 
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+        if (fromUser && isPrepared){
+            mVideo.seekTo(progress);
+        }
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+        if (isPrepared){
+            mVideo.pause();
+        }
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        if (isPrepared){
+            mVideo.start();
+        }
+    }
 }
