@@ -78,9 +78,9 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             @Override
             public void run() {
                 super.run();
-//                mVideo.setVideoURI(Uri.parse("http://7rflo2.com2.z0.glb.qiniucdn.com/5714b0b53c958.mp4"));
+                mVideo.setVideoURI(Uri.parse("http://7rflo2.com2.z0.glb.qiniucdn.com/5714b0b53c958.mp4"));
                 isPrepared = false;
-                mVideo.setVideoURI(Uri.parse("/storage/emulated/0/UCDownloads/zhou.mp4"));
+//                mVideo.setVideoURI(Uri.parse("/storage/emulated/0/UCDownloads/zhou.mp4"));
             }
         }.start();
 
@@ -186,6 +186,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         switch (msg.what){
             case PROGRESS:
                 int currentPosition = mVideo.getCurrentPosition();
+                mPlayerProgress.setProgress(currentPosition);
                 mCurrentTime.setText(DateFormat.format("mm:ss",currentPosition));
                 mHandler.sendEmptyMessageDelayed(PROGRESS,1000);
                 break;
