@@ -4,6 +4,7 @@ import android.content.pm.ActivityInfo;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.format.DateFormat;
@@ -30,7 +31,7 @@ import android.widget.VideoView;
  *
  *
  */
-public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, CompoundButton.OnCheckedChangeListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener {
+public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, CompoundButton.OnCheckedChangeListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener,Handler.Callback {
 
     private VideoView mVideo;
     // 声明媒体控制器
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
     private Handler mHandler;
     private SeekBar mPlayerProgress;
+
+    private static final int PROGRESS = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,15 +101,19 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         if (mPlayerProgress != null) {
             mPlayerProgress.setOnSeekBarChangeListener(this);
         }
+
+        mHandler = new Handler(this);
+
     }
 // 设置准备好了的监听
     @Override
     public void onPrepared(MediaPlayer mp) {
         mVideo.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         int duration = mVideo.getDuration();
-        mTotalTime.setText(DateFormat.format("mm:ss",duration));
+        mTotalTime.setText(DateFormat.format("mm:ss", duration));
         mPlayerProgress.setMax(duration);
         isPrepared = true;
+        mHandler.sendEmptyMessage(PROGRESS);
     }
 
     @Override
@@ -172,5 +179,17 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         if (isPrepared){
             mVideo.start();
         }
+    }
+
+    @Override
+    public boolean handleMessage(Message msg) {
+        switch (msg.what){
+            case PROGRESS:
+                int currentPosition = mVideo.getCurrentPosition();
+                mCurrentTime.setText(DateFormat.format("mm:ss",currentPosition));
+                mHandler.sendEmptyMessageDelayed(PROGRESS,1000);
+                break;
+        }
+        return true;
     }
 }
