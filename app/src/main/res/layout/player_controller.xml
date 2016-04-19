@@ -12,20 +12,20 @@
         android:id="@+id/player_play"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:button="@drawable/player_play"/>
+        android:button="@drawable/player_play" />
 
     <TextView
         android:id="@+id/player_current_time"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:text="00:00"
-        android:gravity="center"/>
+        android:gravity="center" />
 
     <SeekBar
         android:id="@+id/player_progress"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"/>
+        android:layout_weight="1" />
 
     <TextView
         android:id="@+id/player_total_time"
@@ -33,12 +33,12 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:layout_marginRight="5dp"
-        android:text="00:00"/>
+        android:text="00:00" />
 
     <CheckBox
         android:id="@+id/player_full_screen"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:button="@drawable/player_full_screen"/>
+        android:button="@drawable/player_full_screen" />
 
 </LinearLayout>

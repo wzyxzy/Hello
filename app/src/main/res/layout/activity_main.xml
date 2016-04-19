@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_gravity="bottom"
 
-            layout="@layout/player_controller"/>
+            layout="@layout/player_controller" />
 
     </FrameLayout>
 

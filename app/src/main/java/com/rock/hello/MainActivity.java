@@ -1,6 +1,7 @@
 package com.rock.hello;
 
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
@@ -8,6 +9,7 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,63 +28,93 @@ import android.widget.VideoView;
  * Vitamio 第三方
  * 做一个简单的视频播放
  * VideoView
- *
- *
- *
- *
  */
-public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, CompoundButton.OnCheckedChangeListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener,Handler.Callback {
+public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPreparedListener, CompoundButton.OnCheckedChangeListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener, Handler.Callback {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
+    /**
+     * 播放视频的VideoView
+     */
     private VideoView mVideo;
-    // 声明媒体控制器
-//    private MediaController mediaController;
+    /**
+     * VideoView加载资源是否准备好了
+     */
     private boolean isPrepared;
+    /**
+     * 控制播放的布局
+     */
     private View controller;
+    /**
+     * 当前播放时间的View
+     */
     private TextView mCurrentTime;
+    /**
+     * 视频总时长
+     */
     private TextView mTotalTime;
-
-    private Handler mHandler;
+    /**
+     * 视频播放进度的进度条
+     */
     private SeekBar mPlayerProgress;
-
+    /**
+     * 屏幕宽度
+     */
+    private int mScreenWidth;
+    /**
+     * 屏幕高度
+     */
+    private int mScreenHeight;
+    /**
+     * 是否是横屏
+     */
+    private boolean isLandscape;
+    /**
+     * 更新进度的消息
+     */
     private static final int PROGRESS = 1;
+    /**
+     *
+     */
+    private Handler mHandler;
+
+    private float mLastMotionX;
+
+    private float mLastMotionY;
+
+    private int startX;
+
+    private int startY;
+
+    private int threshold = 30;
+
+    private boolean isChangeProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.e(TAG, "onCreate");
         initView();
     }
 
     private void initView() {
         mVideo = ((VideoView) findViewById(R.id.video_view));
-        // 实例化媒体控制器
-//        mediaController = new MediaController(this);
-        //  设置媒体控制器
-//        mVideo.setMediaController(mediaController);
-//        //  为VideoView设置播放的URI,设置Uri是一个相对耗时的操作
-//        mVideo.setVideoURI(Uri.parse("http://7rflo2.com2.z0.glb.qiniucdn.com/5714b0b53c958.mp4"));
-//        //  播放
-//        mVideo.start();
+
         if (mVideo != null) {
             mVideo.setOnPreparedListener(this);
         }
         // 获取屏幕高度
-        int heightPixels = getResources().getDisplayMetrics().heightPixels;
+        mScreenHeight = getResources().getDisplayMetrics().heightPixels;
+        mScreenWidth = getResources().getDisplayMetrics().widthPixels;
+
         // 设置VideoView高为屏幕的三分之一
-        mVideo.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, heightPixels / 3));
+        mVideo.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mScreenHeight / 3));
 
         mVideo.setOnTouchListener(this);
 
-        // 在异步中加载资源
-        new Thread(){
-            @Override
-            public void run() {
-                super.run();
-                mVideo.setVideoURI(Uri.parse("http://7rflo2.com2.z0.glb.qiniucdn.com/5714b0b53c958.mp4"));
-                isPrepared = false;
-//                mVideo.setVideoURI(Uri.parse("/storage/emulated/0/UCDownloads/zhou.mp4"));
-            }
-        }.start();
+        // 加载资源
+        mVideo.setVideoURI(Uri.parse("http://7rflo2.com2.z0.glb.qiniucdn.com/5714b0b53c958.mp4"));
+        isPrepared = false;
 
         CheckBox playerScreen = (CheckBox) findViewById(R.id.player_full_screen);
         if (playerScreen != null) {
@@ -105,7 +137,8 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         mHandler = new Handler(this);
 
     }
-// 设置准备好了的监听
+
+    // 设置准备好了的监听
     @Override
     public void onPrepared(MediaPlayer mp) {
         mVideo.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -118,42 +151,134 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        switch (buttonView.getId()){
+        switch (buttonView.getId()) {
             case R.id.player_full_screen:
                 if (isChecked) {
                     // 添加全屏的标记
                     getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
                     // 请求窗口全屏
-                   // requestWindowFeature(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-                }else{
+                } else {
                     // 清除窗口标记
                     getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                 }
                 break;
             case R.id.player_play:
-                if (isChecked && isPrepared){
+                if (isChecked && isPrepared) {
                     mVideo.start();
-                }else if(!isChecked && isPrepared){
+                } else if (!isChecked && isPrepared) {
                     mVideo.pause();
+                    mHandler.removeMessages(PROGRESS);
                 }
                 break;
         }
     }
 
+    /**
+     * 屏幕配置发生改变
+     *
+     * @param newConfig
+     */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            Log.e(TAG, "ORIENTATION_LANDSCAPE");
+            isLandscape = true;
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            Log.e(TAG, "ORIENTATION_PORTRAIT");
+            isLandscape = false;
+        }
+        super.onConfigurationChanged(newConfig);
+    }
+
+
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        showOrHide();
-        return false;
+        float x = event.getX();
+        float y = event.getY();
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                mLastMotionX = x;
+                mLastMotionY = y;
+                startX = (int) x;
+                startY = (int) y;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float deltaX = event.getX() - mLastMotionX;
+                float deltaY = event.getY() - mLastMotionY;
+                float absDeltaX = Math.abs(deltaX);
+                float absDeltaY = Math.abs(deltaY);
+                if (isLandscape) {
+                    if (absDeltaX > threshold & absDeltaY > threshold) {
+                        if (absDeltaX > absDeltaY) {
+                            isChangeProgress = true;
+                        } else {
+                            isChangeProgress = false;
+                        }
+                    } else if (absDeltaX > threshold & absDeltaY < threshold) {
+                        isChangeProgress = true;
+                    } else if (absDeltaY > threshold & absDeltaX < threshold) {
+                        isChangeProgress = false;
+                    } else {
+                        return true;
+                    }
+
+                    if (isChangeProgress) {
+
+                        if (deltaX > 0) {
+                            //TODO 前进
+                            Log.e(TAG, "前进");
+                        } else {
+                            //TODO 回退
+                            Log.e(TAG, "后退");
+                        }
+                    } else {
+                        // 以屏幕中间为分界线
+                        if (x > mScreenHeight / 2) {
+                            // TODO 改变音量
+                            if (deltaY > 0) {
+                                //TODO 降低音量
+                                Log.e(TAG, "音量减");
+                            } else {
+                                // TODO 增加音量
+                                Log.e(TAG, "音量加");
+                            }
+                        } else {
+                            // 改变屏幕亮度
+                            if (deltaY > 0) {
+                                // TODO 降低屏幕亮度
+                                Log.e(TAG, "降低亮度");
+                            } else {
+                                // TODO 提升屏幕亮度
+                                Log.e(TAG, "提升亮度");
+                            }
+                        }
+                    }
+                    mLastMotionX = x;
+                    mLastMotionY = y;
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (Math.abs(x - startX) > threshold || Math.abs(y - startY) > threshold) {
+
+                } else {
+                    showOrHide();
+                }
+
+                break;
+        }
+
+        return true;
     }
+
     // 显示或者隐藏底部顶部控制
-    private void showOrHide(){
+    private void showOrHide() {
         if (controller.getVisibility() == View.VISIBLE) {
             Animation exit = AnimationUtils.loadAnimation(this, R.anim.controller_exit);
             controller.startAnimation(exit);
             controller.setVisibility(View.INVISIBLE);
-        }else if(controller.getVisibility() == View.INVISIBLE){
+        } else if (controller.getVisibility() == View.INVISIBLE) {
             Animation enter = AnimationUtils.loadAnimation(this, R.anim.controller_enter);
             controller.startAnimation(enter);
             controller.setVisibility(View.VISIBLE);
@@ -162,33 +287,32 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        if (fromUser && isPrepared){
-            mVideo.seekTo(progress);
-        }
+
     }
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-        if (isPrepared){
+        if (isPrepared) {
             mVideo.pause();
         }
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        if (isPrepared){
+        if (isPrepared) {
+            mVideo.seekTo(seekBar.getProgress());
             mVideo.start();
         }
     }
 
     @Override
     public boolean handleMessage(Message msg) {
-        switch (msg.what){
+        switch (msg.what) {
             case PROGRESS:
                 int currentPosition = mVideo.getCurrentPosition();
                 mPlayerProgress.setProgress(currentPosition);
-                mCurrentTime.setText(DateFormat.format("mm:ss",currentPosition));
-                mHandler.sendEmptyMessageDelayed(PROGRESS,1000);
+                mCurrentTime.setText(DateFormat.format("mm:ss", currentPosition));
+                mHandler.sendEmptyMessageDelayed(PROGRESS, 1000);
                 break;
         }
         return true;
