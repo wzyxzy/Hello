@@ -24,6 +24,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.VideoView;
 
+import com.rock.hello.utils.CommonUtil;
+
 /**
  * Vitamio 第三方
  * 做一个简单的视频播放
@@ -76,17 +78,29 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
      *
      */
     private Handler mHandler;
-
+    /**
+     * 每次滑动的X
+     */
     private float mLastMotionX;
-
+    /**
+     * 每次滑动后的Y
+     */
     private float mLastMotionY;
-
+    /**
+     * 触摸起点X
+     */
     private int startX;
-
+    /**
+     * 触摸起点Y
+     */
     private int startY;
-
+    /**
+     * 滑动有效的临界值
+     */
     private int threshold = 30;
-
+    /**
+     * 进度改变的标志位
+     */
     private boolean isChangeProgress;
 
     @Override
@@ -143,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
     public void onPrepared(MediaPlayer mp) {
         mVideo.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         int duration = mVideo.getDuration();
-        mTotalTime.setText(DateFormat.format("mm:ss", duration));
+        mTotalTime.setText(CommonUtil.formatTime(duration));
         mPlayerProgress.setMax(duration);
         isPrepared = true;
         mHandler.sendEmptyMessage(PROGRESS);
@@ -311,7 +325,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             case PROGRESS:
                 int currentPosition = mVideo.getCurrentPosition();
                 mPlayerProgress.setProgress(currentPosition);
-                mCurrentTime.setText(DateFormat.format("mm:ss", currentPosition));
+                mCurrentTime.setText(CommonUtil.formatTime(currentPosition));
                 mHandler.sendEmptyMessageDelayed(PROGRESS, 1000);
                 break;
         }
