@@ -22,9 +22,12 @@ import android.widget.FrameLayout;
 import android.widget.MediaController;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.rock.hello.utils.CommonUtil;
+import com.rock.hello.utils.LightnessController;
+import com.rock.hello.utils.VolumeController;
 
 /**
  * Vitamio 第三方
@@ -257,18 +260,22 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
                             if (deltaY > 0) {
                                 //TODO 降低音量
                                 Log.e(TAG, "音量减");
+                                VolumeController.volumeDown(this,mScreenWidth,deltaY);
                             } else {
                                 // TODO 增加音量
                                 Log.e(TAG, "音量加");
+                                VolumeController.volumeUp(this,mScreenWidth,deltaY);
                             }
                         } else {
                             // 改变屏幕亮度
                             if (deltaY > 0) {
                                 // TODO 降低屏幕亮度
                                 Log.e(TAG, "降低亮度");
+                                LightnessController.lightnessDown(this,mScreenHeight,deltaY);
                             } else {
                                 // TODO 提升屏幕亮度
                                 Log.e(TAG, "提升亮度");
+                                LightnessController.lightnessUp(this,mScreenHeight,deltaY);
                             }
                         }
                     }
