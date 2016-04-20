@@ -160,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         mTotalTime.setText(CommonUtil.formatTime(duration));
         mPlayerProgress.setMax(duration);
         isPrepared = true;
-        mHandler.sendEmptyMessage(PROGRESS);
+
     }
 
     @Override
@@ -181,6 +181,7 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
             case R.id.player_play:
                 if (isChecked && isPrepared) {
                     mVideo.start();
+                    mHandler.sendEmptyMessage(PROGRESS);
                 } else if (!isChecked && isPrepared) {
                     mVideo.pause();
                     mHandler.removeMessages(PROGRESS);
@@ -243,9 +244,11 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
                         if (deltaX > 0) {
                             //TODO 前进
                             Log.e(TAG, "前进");
+                            fastForward(deltaX);
                         } else {
                             //TODO 回退
                             Log.e(TAG, "后退");
+                            fastRewind(deltaX);
                         }
                     } else {
                         // 以屏幕中间为分界线
@@ -331,4 +334,46 @@ public class MainActivity extends AppCompatActivity implements MediaPlayer.OnPre
         }
         return true;
     }
+
+    /**
+     * 快退
+     * @param deltaX
+     */
+    private void fastRewind(float deltaX){
+        int currentPosition = mVideo.getCurrentPosition();
+        int duration = mVideo.getDuration();
+        float forwardTime = 0.2f * duration * deltaX / mScreenHeight;
+        int currentTime = (int) (currentPosition + forwardTime);
+        if (currentTime >= 0){
+            mVideo.seekTo(currentTime);
+            mPlayerProgress.setProgress(currentTime);
+            mCurrentTime.setText(CommonUtil.formatTime(currentTime));
+        }else{
+            mVideo.seekTo(0);
+            mPlayerProgress.setProgress(0);
+            mCurrentTime.setText(CommonUtil.formatTime(0));
+        }
+    }
+
+    /**
+     * 快进
+     * @param deltaX
+     */
+    private void fastForward(float deltaX){
+        int currentPosition = mVideo.getCurrentPosition();
+        int duration = mVideo.getDuration();
+        float forwardTime = 0.2f * duration * deltaX / mScreenHeight;
+        int currentTime = (int) (currentPosition + forwardTime);
+        if (currentTime <= duration){
+            mVideo.seekTo(currentTime);
+            mPlayerProgress.setProgress(currentTime);
+            mCurrentTime.setText(CommonUtil.formatTime(currentTime));
+        }else{
+            mVideo.seekTo(duration);
+            mPlayerProgress.setProgress(duration);
+            mCurrentTime.setText(CommonUtil.formatTime(duration));
+        }
+    }
+
+
 }
